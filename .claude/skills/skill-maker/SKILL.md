@@ -21,7 +21,7 @@ Judge each line by whether the model running the skill acts differently because 
 - **For the model, not the maintainer.** The reader is the model running the skill. Where a source came from, how a rule was discovered, which model misbehaved when, what the interview covered: these belong in the commit or the handoff. Ask whether the model acts on the line or the line only records its provenance. A URL the model will open at runtime is an interface and stays; a measurement stays only when it is the reason that changes the next decision.
 - **Dense.** Keep the clause that lets a rule be re-derived; cut restatement, arguments that defend a rule, consequences the reader can compute, and anything the model already knows. A value the client owns, such as a limit or a default, goes stale; write the failure it causes instead. A necessary example or exception is not cut to save words.
 
-A line that corrects a model default names the behavior to avoid and why. Which model showed that behavior, under what conditions, and when to test it again go to the development record: a model change can leave the line needed, redundant or harmful, and nothing in the text says which.
+A line that corrects a model default names the specific behavior to avoid and why; a general instruction such as "avoid a generic look" tends to swap one default for another. Which model showed that behavior, under what conditions, and when to test it again go to the development record: a model change can leave the line needed, redundant or harmful, and nothing in the text says which.
 
 If the contrast turns up nothing the model lacks, the right outcome is no skill, or one line in the project's instructions, and saying so with the evidence is a finished job.
 
@@ -55,7 +55,7 @@ Give the run the facts and materials the task needs and withhold only the judgme
 
 A principle carries its reason, the conditions under which it holds, the condition that overturns it, and a case where it decides between two similar-looking options. A slogan such as "use judgment" or "keep it user-centred" justifies opposite actions and is not a principle.
 
-Examples narrow the space the model explores. Use one to show why two similar cases come out differently, not as a template of the right answer. When the skill has to push against a model default, name the specific patterns to avoid: a general instruction such as "avoid a generic look" tends to swap one default for another.
+Examples narrow the space the model explores. Use one to show why two similar cases come out differently, not as a template of the right answer.
 
 Say how the model will know the work is done, in terms it can check. Separate what must be preserved from what the model is free to vary, so a completion criterion does not become a demand for one particular output.
 
@@ -65,7 +65,7 @@ Split files by when they are needed, not by length. What every path through the 
 
 ## Mechanics that fail silently
 
-- **Adding a skill can silence another.** Every skill's description shares one listing budget, and when the listing overflows Claude Code drops descriptions starting with the skills invoked least, so a rarely used but important skill stops triggering with no error. Before adding one, run `claude -p "/skill-doctor"` in the project the skill will serve to see the existing skills with their listing cost and use, and fold the new behavior into an existing skill when they share a trigger.
+- **Adding a skill can quietly weaken another.** The descriptions of skills Claude may invoke on its own share one listing budget; a `disable-model-invocation: true` skill is not in it. When the listing overflows, Claude Code drops descriptions starting with the skills invoked least: the name stays, but the words a request would have matched are gone, so a rarely used but important skill stops being chosen with no error. Before adding a model-invoked skill, run `claude -p "/skill-doctor"` in the project it will serve to see the existing skills with their listing cost and use. A trigger shared with an existing skill is a reason to draw the boundary between them, in both descriptions or by merging the two when one job needs both bodies together.
 - **`claude plugin validate` checks what you point it at.** Given a skill's own folder it validates a plugin manifest and fails with an error that says nothing about the skill. Pass the directory that contains skill folders (for a project skill, `.claude/skills`) by its real path, because symlinked entries are not read, and add `--strict`, because warnings alone still exit 0.
 
 ## When the skill is done
