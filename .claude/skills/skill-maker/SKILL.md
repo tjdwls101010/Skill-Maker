@@ -61,7 +61,7 @@ Examples narrow the space the model explores. Use one to show why two similar ca
 
 Say how the model will know the work is done, in terms it can check. Separate what must be preserved from what the model is free to vary, so a completion criterion does not become a demand for one particular output.
 
-Put knowledge where it can act. Settled calculations and verification contracts belong in an interface such as a rubric, template, schema or script; judgment that turns on context does not become a fixed branch.
+Put knowledge where it can act. Settled calculations and verification contracts belong in an interface such as a rubric, template, schema or script; judgment that turns on context does not become a fixed branch. An interface that re-expresses what the model does directly narrows it instead: a search command over a database the model could query offers only the filters its author thought of, and the skill then has to teach workarounds such as one search per spelling. Give the model a schema it can read and let it write and run the query itself; a command that only passes the query through adds code and a second copy of the schema, and nothing the model lacks.
 
 Split files by when they are needed, not by length. What every path through the skill needs stays in SKILL.md; what only one branch or step needs can move to a reference, with a pointer at that branch saying when to read it ("for a crash report, read references/crash.md"). A reference nothing tells the model to open is skipped without a trace. A skill that will be packaged must carry everything it points to.
 
@@ -72,21 +72,30 @@ A skill's directory is an interface like its `--help`: whoever opens the skill, 
 ```
 <skill>/
 ├── SKILL.md
+├── references/           # read on one branch, behind a pointer that says when
+├── data/                 # state the skill reads or writes at runtime
 └── scripts/
     ├── cli.py            # the only entry point
     └── <skill_name>/     # the only package: the skill's name as a Python identifier (hyphens become underscores)
         ├── <feature>/    # one per reason to change, as many as there are
         ├── <system>/     # one per system or format someone else owns, named after it
-        └── <store>/      # one per kind of state, when there is any
-<skill's source repository>/tests/   # tests, fixtures, simulators, admin tools
+        ├── <store>/      # one per kind of state, when there is any
+        └── <helper>.py   # shared by every kind
+<skill's source repository>/
+├── tests/                # tests, fixtures, simulators
+└── <job>/                # code only a maintainer or a scheduled job runs, named for the job
 ```
 
 - Running `cli.py` directly puts `scripts/` first on `sys.path`, which already makes the package importable, so nothing edits `sys.path`; it also means a top-level name can shadow a standard-library module of the same name. Two fixed names make that one check; if the package name is a stdlib module, suffix it.
 - Every skill is called as `uv run "<dir>/scripts/cli.py" <command> …`, with `<dir>` written as `$` followed by `{CLAUDE_SKILL_DIR}` in both the call and the `allowed-tools` pattern, so both read the same in every skill. A PEP 723 header at the top of `cli.py` states `requires-python` and every dependency, because the `python3` on PATH differs between a terminal, a hook and a scheduled job and can be too old for the code.
-- `cli.py` holds the whole command surface (parser, help text, dispatch, exit codes) and no domain logic, so the contract the model sees lives in one file. It describes itself: every argument explained in `--help`, closed sets offered as choices.
-- Subpackage names come from the domain; the criteria for them do not. Split when a second reason to change appears, not before; until then modules sit directly in the package. Code that deals with a system or format someone else owns (a site's HTML, another CLI's output, an external API, an exported file) sits in one subpackage named after it, because it changes without notice and the fix should touch one folder. Imports run one way, from features to systems and stores to shared helpers, so what features rely on never depends on them and a feature can change or go without touching the rest.
-- stdout carries only the result the model acts on, one JSON document when it will parse it, with a cheap signal first (a summary, a size, the next action) and a handle to the costly detail, so the model decides before it pays. stderr carries progress and diagnostics. 0 is success and 2 is bad arguments; `--help` defines any other exit code.
-- Tests and anything only a maintainer runs live in the repository the skill's source is kept in (for a symlinked install, the link target's), outside the skill folder; if the skill has no repository, agree on one with the user before writing tests. A tool the model itself must run becomes a subcommand. A structure test there checks the two top-level names, the import direction and that nothing edits `sys.path`, so a change that breaks the tree fails there.
+- The model is the caller of every command, so a command earns its place by hiding work that goes the same way every time or that the model cannot do reliably, such as a write that has to keep several things consistent.
+- `cli.py` holds the whole command surface (parser, help text, dispatch, exit codes) and no domain logic, so the contract the model sees lives in one file; choosing which items to act on, a fallback, a retry or a follow-up call that depends on the first one's result is domain logic and belongs to the unit the command calls.
+- `--help` is read in two levels, often cut short: the top-level map, then the one command about to be called. So each `<command> --help` explains every argument it takes, offers closed sets as choices, and states its output and failures on its own, because argparse shows a parent's epilog only at the top. A map that outgrows a screen calls for fewer commands, not a third level.
+- stdout carries only the result the model acts on, one JSON document when it will parse it, with a cheap signal first (a summary, a size, the next action) and a handle to the costly detail that names that result alone, so the model decides before it pays and a later call cannot overwrite what an earlier one returned. stderr carries progress and diagnostics. 0 is success and 2 is bad arguments; `--help` defines any other exit code.
+- Subpackage names come from the domain; the criteria for them do not. Each unit, a module directly in the package or a subpackage, is a deep module: a small interface (the module itself, or the subpackage's `__init__.py`) in front of what it hides, and nothing outside the unit reaches past it, so its inside can change without touching callers or tests. Split when a second reason to change appears, not before; until then modules sit directly in the package.
+- Code that deals with a system or format someone else owns (a site's HTML, another CLI's output, an external API, an exported file) sits in one subpackage named after it, because it changes without notice and the fix should touch one folder; it holds everything needed to talk to that system, including how to read its codes, positions and date formats, and hands features results in the skill's own terms, while what is done with the system, such as a bulk collector or a conversion for storage, belongs to the unit or job with that purpose. Imports run one way, from features to systems and stores to shared helpers, so what features rely on never depends on them and a feature can change or go without touching the rest; a feature built from another, such as a batch built from single runs, is an edge the structure test names.
+- State the skill reads or writes lives in `data/`, so the tree says where it is, not in a home or cache directory; a skill shipped in a plugin keeps state that must outlive an update in the plugin's data directory instead, because an update replaces the skill folder.
+- Tests and anything only a maintainer or a scheduled job runs live in the repository the skill's source is kept in (for a symlinked install, the link target's), outside the skill folder; if the skill has no repository, agree on one with the user before writing tests. That code may import the skill's unit interfaces, and the skill never imports it, because the skill must run from its own folder. A tool the model itself must run becomes a subcommand. A structure test there checks the two top-level names, the import direction, that nothing outside a unit, tests included, reaches past its interface and that nothing edits `sys.path`, so a change that breaks the tree fails there.
 
 When a change to an existing skill touches the structure of code that predates this layout, offer the migration to the user as a decision of its own; until it is agreed, the old layout stands and the structure test does not apply to it.
 
