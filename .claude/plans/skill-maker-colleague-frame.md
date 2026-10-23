@@ -130,6 +130,7 @@ v0.4.0 문장 가운데 아래 표에 없는 것은 모두 그대로 둔다. 삭
 | 4절 완료 기준 문단 | 추가: 책임 문장(결과물이 보여 주지 않는 것) |
 | 5절 마지막 문단 "When a change to an existing skill touches the structure of code that predates this layout, offer the migration …" | 수정: 사용자 프로젝트가 이미 다른 스택·배치를 따르는 경우를 더한다(H15). 옛 코드의 경우, 'decision of its own', 합의 전 구조 테스트 비적용은 유지한다 |
 | 6절 "…checked it against the four properties above…" | 수정: "five properties" |
+| 6절 "…new code, and code migrated with the user's agreement, also passes the structure test." | 수정: "new code under this layout"(구현 리뷰 F2). 5절을 넓힌 뒤, 사용자 배치로 쓴 새 코드에 구조 테스트를 요구하지 않도록 |
 
 ### Sonnet 계획 리뷰 (1차, `plan-review`, read-only)
 
